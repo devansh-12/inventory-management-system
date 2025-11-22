@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import pool from "../db";
 import { signToken } from "../utils/jwt";
+import { sendPasswordResetEmail } from "../utils/email";
 
 const router = express.Router();
 
@@ -121,8 +122,13 @@ router.post("/forgot-password", async (req, res) => {
             [email, otp, expiresAt]
         );
 
-        // Mock sending email
-        console.log(`[MOCK EMAIL] To: ${email}, Subject: Password Reset, Body: Your OTP is ${otp}`);
+        // Send email with OTP
+        try {
+            await sendPasswordResetEmail(email, otp);
+        } catch (emailError) {
+            console.error("Failed to send password reset email:", emailError);
+            // Continue execution - don't reveal email sending failure to prevent enumeration
+        }
 
         res.status(200).json({ message: "If an account with that email exists, we sent you a reset code." });
     } catch (error) {
