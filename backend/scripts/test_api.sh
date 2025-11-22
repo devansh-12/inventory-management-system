@@ -157,8 +157,43 @@ else
 fi
 echo ""
 
-# Test 7: Error Handling - Invalid Auth
-echo "Test 7: Error Handling - Invalid Auth Token"
+echo -e "${YELLOW}=== STOCK ENDPOINTS ===${NC}"
+echo ""
+
+# Test 7: Get Stock List
+echo "Test 7: Get Stock List (GET /api/stock)"
+STOCK_LIST=$(curl -s -H "$AUTH_HEADER" "$BASE_URL/api/stock")
+
+if echo "$STOCK_LIST" | grep -q "\["; then
+    if echo "$STOCK_LIST" | grep -q "\"product_name\""; then
+        COUNT=$(echo "$STOCK_LIST" | grep -o '"id":' | wc -l)
+        print_result 0 "Retrieved $COUNT stock item(s)"
+        echo "   Sample: $(echo "$STOCK_LIST" | head -c 200)..."
+    else
+        print_result 0 "Retrieved empty stock list (no items yet)"
+        echo "   Response: []"
+    fi
+else
+    print_result 1 "Failed to get stock list"
+    echo "   Response: $STOCK_LIST"
+fi
+echo ""
+
+# Test 8: Get Dashboard Stats
+echo "Test 8: Get Dashboard Stats (GET /api/dashboard/stats)"
+DASHBOARD_STATS=$(curl -s -H "$AUTH_HEADER" "$BASE_URL/api/dashboard/stats")
+
+if echo "$DASHBOARD_STATS" | grep -q "receipts"; then
+    print_result 0 "Retrieved dashboard statistics"
+    echo "   Response: $DASHBOARD_STATS"
+else
+    print_result 1 "Failed to get dashboard stats"
+    echo "   Response: $DASHBOARD_STATS"
+fi
+echo ""
+
+# Test 9: Error Handling - Invalid Auth
+echo "Test 9: Error Handling - Invalid Auth Token"
 ERROR_RESPONSE=$(curl -s -H "Authorization: Bearer invalid-token" "$BASE_URL/api/receipts")
 
 if echo "$ERROR_RESPONSE" | grep -q "error"; then
@@ -168,8 +203,8 @@ else
 fi
 echo ""
 
-# Test 8: Error Handling - Missing Fields
-echo "Test 8: Error Handling - Missing Required Fields"
+# Test 10: Error Handling - Missing Fields
+echo "Test 10: Error Handling - Missing Required Fields"
 ERROR_RESPONSE=$(curl -s -X POST "$BASE_URL/api/deliveries" \
   -H "$AUTH_HEADER" \
   -H "$CONTENT_TYPE" \

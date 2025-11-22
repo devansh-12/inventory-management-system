@@ -1,16 +1,18 @@
-console.log("Starting server.ts...");
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
+import { Pool } from "@neondatabase/serverless";
+import bcrypt from "bcryptjs";
 
-dotenv.config();
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
 
+// Allow cookies from frontend
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -22,17 +24,19 @@ app.use(
 import receiptRoutes from "./routes/receiptRoutes.js";
 import deliveryRoutes from "./routes/deliveryRoutes.js";
 import moveHistoryRoutes from "./routes/moveHistoryRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import stockRoutes from "./routes/stockRoutes.js";
+import warehouseRoutes from "./routes/warehouseRoutes.js";
 
 app.use("/api/receipts", receiptRoutes);
 app.use("/api/deliveries", deliveryRoutes);
 app.use("/api/move-history", moveHistoryRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/stock", stockRoutes);
+app.use("/api", warehouseRoutes);
 
-// Auth endpoints
-import { Pool } from "@neondatabase/serverless";
-import bcrypt from "bcryptjs";
-import { signToken } from "./utils/jwt.js";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Auth routes
+import { signToken, verifyToken } from "./utils/jwt.js";
 
 // Login endpoint
 app.post("/auth/login", async (req, res) => {
@@ -100,7 +104,6 @@ app.get("/auth/me", async (req, res) => {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const { verifyToken } = await import("./utils/jwt.js");
     const decoded = verifyToken(token) as any;
 
     const result = await pool.query("SELECT id, email, name FROM users WHERE id = $1", [
