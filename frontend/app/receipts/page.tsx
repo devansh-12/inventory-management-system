@@ -10,7 +10,8 @@ import ReceiptsKanban from './components/ReceiptsKanban';
 import AddReceiptModal from './components/AddReceiptModal';
 import ReceiptDetailModal from './components/ReceiptDetailModal';
 
-import type { Product, Receipt } from './types';
+import type { Product, Receipt, Contact, Warehouse } from './types';
+import { useEffect } from 'react';
 
 export default function ReceiptsPage() {
   const router = useRouter();
@@ -33,17 +34,52 @@ export default function ReceiptsPage() {
     status: 'Draft' as Receipt['status'],
   });
 
-  // Dummy data for receipts - using state so it can be updated
-  const [receiptsData, setReceiptsData] = useState<Receipt[]>([
-    { id: '1', reference: 'WH/IN/0001', from: 'vendor', to: 'WH/Stock1', contact: 'Azure Interior', scheduleDate: null, status: 'Ready', responsible: 'John Doe', products: [{ id: '1', productCode: 'DESK001', productName: 'Desk', quantity: 6 }] },
-    { id: '2', reference: 'WH/IN/0002', from: 'vendor', to: 'WH/Stock1', contact: 'Azure Interior', scheduleDate: null, status: 'Ready', responsible: 'Jane Smith', products: [] },
-    { id: '3', reference: 'WH/IN/0003', from: 'vendor', to: 'WH/Stock2', contact: 'Tech Solutions', scheduleDate: '2024-01-15', status: 'In Progress', responsible: 'Mike Johnson', products: [] },
-    { id: '4', reference: 'WH/IN/0004', from: 'vendor', to: 'WH/Stock1', contact: 'Global Supplies', scheduleDate: '2024-01-16', status: 'Draft', responsible: 'Sarah Lee', products: [] },
-    { id: '5', reference: 'WH/IN/0005', from: 'vendor', to: 'WH/Stock3', contact: 'Azure Interior', scheduleDate: '2024-01-17', status: 'Ready', responsible: 'Tom Wilson', products: [] },
-    { id: '6', reference: 'WH/IN/0006', from: 'vendor', to: 'WH/Stock2', contact: 'Tech Solutions', scheduleDate: null, status: 'Done', responsible: 'Emily Brown', products: [] },
-    { id: '7', reference: 'WH/IN/0007', from: 'vendor', to: 'WH/Stock1', contact: 'Global Supplies', scheduleDate: '2024-01-18', status: 'Ready', responsible: 'David Miller', products: [] },
-    { id: '8', reference: 'WH/IN/0008', from: 'vendor', to: 'WH/Stock3', contact: 'Azure Interior', scheduleDate: null, status: 'In Progress', responsible: 'Lisa Anderson', products: [] },
-  ]);
+  // Data state
+  const [receiptsData, setReceiptsData] = useState<Receipt[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+
+  // Fetch data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [receiptsRes, contactsRes, warehousesRes] = await Promise.all([
+          fetch('http://localhost:5000/api/receipts', { credentials: 'include' }),
+          fetch('http://localhost:5000/api/contacts', { credentials: 'include' }),
+          fetch('http://localhost:5000/api/warehouses', { credentials: 'include' })
+        ]);
+
+        if (receiptsRes.ok) {
+          const data = await receiptsRes.json();
+          // Map backend data to frontend model if needed
+          const mappedReceipts = data.map((r: any) => ({
+            id: r.id.toString(),
+            reference: r.reference,
+            from: r.contact_name || 'Unknown',
+            to: r.warehouse_name || 'Unknown',
+            contact: r.contact_name || 'Unknown', // Using contact name for contact field too for now
+            scheduleDate: r.scheduled_date ? new Date(r.scheduled_date).toISOString().split('T')[0] : null,
+            status: r.status,
+            responsible: r.responsible_user_name,
+            products: [] // Products are not returned in list view by default in this simple implementation, or we need to fetch them
+          }));
+          setReceiptsData(mappedReceipts);
+        }
+
+        if (contactsRes.ok) {
+          setContacts(await contactsRes.json());
+        }
+
+        if (warehousesRes.ok) {
+          setWarehouses(await warehousesRes.json());
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Generate next reference number
   const generateNextReference = (): string => {
@@ -63,33 +99,47 @@ export default function ReceiptsPage() {
   const selectedReceipt = receiptsData.find(r => r.id === selectedReceiptId);
 
   // Handle adding new receipt
-  const handleAddReceipt = () => {
-    if (!newReceipt.from || !newReceipt.to || !newReceipt.contact) {
-      alert('Please fill in all required fields');
+  const handleAddReceipt = async () => {
+    if (!newReceipt.from || !newReceipt.to) {
+      alert('Please select a contact and a warehouse');
       return;
     }
 
-    const newReceiptData: Receipt = {
-      id: (receiptsData.length + 1).toString(), // Simple ID generation for mock data
-      reference: generateNextReference(),
-      from: newReceipt.from,
-      to: newReceipt.to,
-      contact: newReceipt.contact,
-      scheduleDate: newReceipt.scheduleDate || null,
-      status: newReceipt.status,
-      responsible: 'Current User', // Auto-fill with logged in user
-      products: [],
-    };
+    try {
+      const payload = {
+        from_contact_id: parseInt(newReceipt.from),
+        to_warehouse_id: parseInt(newReceipt.to),
+        scheduled_date: newReceipt.scheduleDate || new Date().toISOString(),
+        items: [] // Initial empty items
+      };
 
-    setReceiptsData([...receiptsData, newReceiptData]);
-    setIsModalOpen(false);
-    setNewReceipt({
-      from: '',
-      to: '',
-      contact: '',
-      scheduleDate: '',
-      status: 'Draft',
-    });
+      const res = await fetch('http://localhost:5000/api/receipts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const created = await res.json();
+        // Refresh list
+        window.location.reload(); // Simple reload for now, or re-fetch
+        setIsModalOpen(false);
+        setNewReceipt({
+          from: '',
+          to: '',
+          contact: '',
+          scheduleDate: '',
+          status: 'Draft',
+        });
+      } else {
+        const err = await res.json();
+        alert(`Error creating receipt: ${err.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating receipt:', error);
+      alert('Failed to create receipt');
+    }
   };
 
   // Handle new receipt form changes
@@ -516,6 +566,8 @@ export default function ReceiptsPage() {
             newReceipt={newReceipt}
             onNewReceiptChange={handleNewReceiptChange}
             onAddReceipt={handleAddReceipt}
+            contacts={contacts}
+            warehouses={warehouses}
           />
 
           {isDetailModalOpen && selectedReceipt && (

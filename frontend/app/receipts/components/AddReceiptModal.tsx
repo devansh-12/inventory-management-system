@@ -1,7 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
-import type { Receipt } from '../types';
+import type { Receipt, Contact, Warehouse } from '../types';
 import React from 'react';
 
 interface AddReceiptModalProps {
@@ -10,6 +10,8 @@ interface AddReceiptModalProps {
   newReceipt: { from: string; to: string; contact: string; scheduleDate: string; status: Receipt['status']; };
   onNewReceiptChange: (field: string, value: string | Receipt['status']) => void;
   onAddReceipt: () => void;
+  contacts: Contact[];
+  warehouses: Warehouse[];
 }
 
 const statusOptions: Receipt['status'][] = ['Draft', 'Ready', 'In Progress', 'Done', 'Cancelled'];
@@ -20,6 +22,8 @@ export default function AddReceiptModal({
   newReceipt,
   onNewReceiptChange,
   onAddReceipt,
+  contacts,
+  warehouses,
 }: AddReceiptModalProps) {
   if (!isOpen) return null;
 
@@ -39,43 +43,52 @@ export default function AddReceiptModal({
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              From <span className="text-red-500">*</span>
+              From (Contact) <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
+            <select
               value={newReceipt.from}
-              onChange={(e) => onNewReceiptChange('from', e.target.value as string)}
-              placeholder="Enter source (e.g., vendor)"
+              onChange={(e) => onNewReceiptChange('from', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               required
-            />
+            >
+              <option value="">Select Contact</option>
+              {contacts.map((contact) => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               To (Warehouse Location) <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
+            <select
               value={newReceipt.to}
-              onChange={(e) => onNewReceiptChange('to', e.target.value as string)}
-              placeholder="Enter destination (e.g., WH/Stock1)"
+              onChange={(e) => onNewReceiptChange('to', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               required
-            />
+            >
+              <option value="">Select Warehouse</option>
+              {warehouses.map((warehouse) => (
+                <option key={warehouse.id} value={warehouse.id}>
+                  {warehouse.name} ({warehouse.short_code})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Contact <span className="text-red-500">*</span>
+              Contact Person <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={newReceipt.contact}
               onChange={(e) => onNewReceiptChange('contact', e.target.value as string)}
-              placeholder="Enter contact name"
+              placeholder="Enter contact name (optional override)"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              required
             />
           </div>
 

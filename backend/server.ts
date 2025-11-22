@@ -12,6 +12,7 @@ import moveHistoryRoutes from "./routes/moveHistoryRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import stockRoutes from "./routes/stockRoutes.js";
 import warehouseRoutes from "./routes/warehouseRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -73,3 +74,4 @@ app.use("/api/move-history", moveHistoryRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/stock", stockRoutes);
 app.use("/api", warehouseRoutes);
+app.use("/api/contacts", contactRoutes);
