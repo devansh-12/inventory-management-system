@@ -4,27 +4,14 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-async function login(loginId: string, password: string): Promise<LoginResponse> {
-  // Mock response for UI preview - allows access for testing
-  return new Promise<LoginResponse>((resolve) => {
-    setTimeout(() => {
-      // For UI testing, allow any login with valid credentials
-      if (loginId.length >= 3 && password.length >= 3) {
-        // Save mock user to localStorage for authentication
-        const mockUser = {
-          id: "1",
-          email: loginId.includes("@") ? loginId : `${loginId}@example.com`,
-          name: loginId,
-        };
-        if (typeof window !== "undefined") {
-          localStorage.setItem("user", JSON.stringify(mockUser));
-        }
-        resolve({}); // Success - no error
-      } else {
-        resolve({ error: "Backend not connected. This is a UI preview." });
-      }
-    }, 500);
+async function login(email: string, password: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
   });
+  return res.json();
 }
 
 interface LoginResponse {
@@ -33,8 +20,7 @@ interface LoginResponse {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [loginId, setLoginId] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,9 +29,22 @@ export default function LoginPage() {
     password?: string;
   }>({});
 
-  const validateLoginId = (id: string): string | undefined => {
-    if (id.length > 0 && id.length < 3) {
-      return "Login ID must be at least 3 characters";
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await login(email, password);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        // On success, navigate to home
+        window.location.href = "/";
+      }
+    } catch {
+      setError("Invalid login ID or password");
+    } finally {
+      setLoading(false);
     }
     return undefined;
   };
@@ -95,12 +94,21 @@ export default function LoginPage() {
       // On success, navigate to dashboard
       router.push("/dashboard");
     }
-  } catch {
-    setError("Invalid login ID or password");
-  } finally {
-    setLoading(false);
-  }
-};
+
+    try {
+      const result: LoginResponse = await login(loginId, password);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        // On success, navigate to home
+        router.push("/");
+      }
+    } catch {
+      setError("Invalid login ID or password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
@@ -123,20 +131,18 @@ export default function LoginPage() {
             {/* Login ID Input */}
             <div>
               <label
-                htmlFor="loginId"
+                htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Login ID
+                Email
               </label>
               <input
-                id="loginId"
-                type="text"
-                value={loginId}
-                onChange={(e) => handleLoginIdChange(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900 ${
-                  fieldErrors.loginId ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter your login ID"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                placeholder="Enter your email"
                 required
               />
               {fieldErrors.loginId && (
@@ -157,9 +163,8 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900 ${
-                  fieldErrors.password ? "border-red-500 focus:ring-red-500" : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900 ${fieldErrors.password ? "border-red-500 focus:ring-red-500" : "border-gray-300"
+                  }`}
                 placeholder="Enter your password"
                 required
               />

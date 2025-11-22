@@ -1,17 +1,22 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
-interface SignupResponse {
-  error?: string;
-  // Add any other properties you expect in the response if needed
-}
+async function signup(loginId: string, email: string, password: string) {
+  // Backend connection disabled for now - just for UI preview
+  // Uncomment when backend is ready:
+  /*
+  const res = await fetch("http://localhost:5000/auth/signup", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ loginId, email, password }),
+  });
+  return res.json();
+  */
 
-async function signup(loginId: string, email: string, password: string, role: string): Promise<SignupResponse> {
   // Mock response for UI preview
-  console.log("Mock signup with role:", role); // Log role for UI preview
-  return new Promise<SignupResponse>((resolve) => {
+  return new Promise<{ error?: string }>((resolve) => {
     setTimeout(() => {
       resolve({ error: "Backend not connected. This is a UI preview." });
     }, 500);
@@ -19,7 +24,6 @@ async function signup(loginId: string, email: string, password: string, role: st
 }
 
 export default function SignupPage() {
-  const router = useRouter();
   const [loginId, setLoginId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,9 +40,6 @@ export default function SignupPage() {
   }>({});
 
   const validateLoginId = (id: string): string | undefined => {
-    if (id.length === 0) {
-      return undefined; // Don't show error for empty field while typing
-    }
     if (id.length < 6 || id.length > 12) {
       return "Login ID must be between 6 and 12 characters";
     }
@@ -83,46 +84,43 @@ export default function SignupPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setErrors({});
+    e.preventDefault();
+    setErrors({});
 
-  // Validate all fields
-  const loginIdError = validateLoginId(loginId);
-  const emailError = validateEmail(email);
-  const passwordError = validatePassword(password);
-  const reEnterPasswordError = validateReEnterPassword(reEnterPassword, password);
-  const roleError = !role ? "Please select a role" : undefined;
+    // Validate all fields
+    const loginIdError = validateLoginId(loginId);
+    const passwordError = validatePassword(password);
+    const reEnterPasswordError =
+      password !== reEnterPassword ? "Passwords do not match" : undefined;
 
-  if (loginIdError || emailError || passwordError || reEnterPasswordError || roleError) {
-    setErrors({
-      loginId: loginIdError,
-      email: emailError,
-      password: passwordError,
-      reEnterPassword: reEnterPasswordError,
-      role: roleError,
-    });
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const result: SignupResponse = await signup(loginId, email, password, role);
-    if (result?.error) {
-      if (result.error.includes("email") || result.error.includes("duplicate")) {
-        setErrors({ email: "Email already exists" });
-      } else {
-        setErrors({ general: result.error });
-      }
-    } else {
-      // On success, navigate to login
-      router.push("/login");
+    if (loginIdError || passwordError || reEnterPasswordError) {
+      setErrors({
+        loginId: loginIdError,
+        password: passwordError,
+        reEnterPassword: reEnterPasswordError,
+      });
+      return;
     }
-  } catch (error) {
-    setErrors({ general: "Signup failed. Please try again." });
-  } finally {
-    setLoading(false);
-  }
-};
+
+    setLoading(true);
+    try {
+      const result = await signup(loginId, email, password);
+      if (result?.error) {
+        if (result.error.includes("email") || result.error.includes("duplicate")) {
+          setErrors({ email: "Email already exists" });
+        } else {
+          setErrors({ general: result.error });
+        }
+      } else {
+        // On success, navigate to login
+        window.location.href = "/login";
+      }
+    } catch (error) {
+      setErrors({ general: "Signup failed. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
@@ -141,27 +139,26 @@ export default function SignupPage() {
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Login ID Input */}
+            {/* Name Input */}
             <div>
               <label
-                htmlFor="loginId"
+                htmlFor="name"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Enter Login ID
+                Full Name
               </label>
               <input
-                id="loginId"
+                id="name"
                 type="text"
                 value={loginId}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  setLoginId(value);
-                  const error = validateLoginId(value);
-                  setErrors((prev) => ({ ...prev, loginId: error }));
+                  setLoginId(e.target.value);
+                  if (errors.loginId) {
+                    setErrors((prev) => ({ ...prev, loginId: undefined }));
+                  }
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
-                  errors.loginId ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.loginId ? "border-red-300" : "border-gray-300"
+                  }`}
                 placeholder="6-12 characters"
                 required
               />
@@ -188,9 +185,8 @@ export default function SignupPage() {
                   const error = validateEmail(value);
                   setErrors((prev) => ({ ...prev, email: error }));
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
-                  errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.email ? "border-red-300" : "border-gray-300"
+                  }`}
                 placeholder="Enter your email"
                 required
               />
@@ -216,9 +212,8 @@ export default function SignupPage() {
                   const error = !value ? "Please select a role" : undefined;
                   setErrors((prev) => ({ ...prev, role: error }));
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
-                  errors.role ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${errors.role ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
+                  }`}
                 required
               >
                 <option value="">Select a role</option>
@@ -253,9 +248,8 @@ export default function SignupPage() {
                     setErrors((prev) => ({ ...prev, reEnterPassword: reEnterError }));
                   }
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
-                  errors.password ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.password ? "border-red-300" : "border-gray-300"
+                  }`}
                 placeholder="Max 8 chars, uppercase & lowercase"
                 required
               />
@@ -282,9 +276,8 @@ export default function SignupPage() {
                   const error = validateReEnterPassword(value, password);
                   setErrors((prev) => ({ ...prev, reEnterPassword: error }));
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
-                  errors.reEnterPassword ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.reEnterPassword ? "border-red-300" : "border-gray-300"
+                  }`}
                 placeholder="Re-enter your password"
                 required
               />

@@ -25,3 +25,14 @@ export interface NavItem {
   label: string;
   path: string;
 }
+
+export interface Contact {
+  id: number;
+  name: string;
+}
+
+export interface Warehouse {
+  id: number;
+  name: string;
+  short_code: string;
+}

@@ -2,7 +2,10 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import pool from "../db.js";
 import { signToken } from "../utils/jwt.js";
+<<<<<<< HEAD
+=======
 import { sendPasswordResetEmail } from "../utils/email.js";
+>>>>>>> fe72aaca2e84d97e26d248547a79281c92bdf72d
 
 const router = express.Router();
 
