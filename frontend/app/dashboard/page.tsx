@@ -1,8 +1,35 @@
 'use client';
 
+<<<<<<< HEAD
 import { useState } from 'react';
 import { Search, Bell, HelpCircle, Settings, User, Package, TrendingDown, Clock, CheckCircle, AlertTriangle, ArrowUp, ArrowDown, TrendingUp, Truck, Warehouse, FileText, Activity, BarChart3, Box, RefreshCw, type LucideIcon } from 'lucide-react';
 import { useDashboard } from '@/lib/hooks/useDashboard';
+=======
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, Bell, HelpCircle, Settings, User, Package, TrendingDown, Clock, CheckCircle, AlertTriangle, ArrowUp, ArrowDown, TrendingUp, Truck, Warehouse, FileText, Activity, BarChart3, Box, RefreshCw, LogOut, type LucideIcon } from 'lucide-react';
+import { isAuthenticated, logout, getUser } from '@/lib/auth';
+
+import Sidebar from '@/components/Sidebar';
+import Header from './components/Header';
+import KPICard from './components/KPICard';
+import OperationsCard from './components/OperationsCard';
+import WarehouseMap from './maps/WarehouseMap';
+import WarehouseCapacity from './components/WarehouseCapacity';
+import FastMovingSKUs from './components/FastMovingSKUs';
+import RecentActivity from './components/RecentActivity';
+import AlertsList from './components/AlertsList';
+import StockHealth from './components/StockHealth';
+import QuickActions from './components/QuickActions';
+import {
+  mockKPIData,
+  mockRecentActivity,
+  mockAlerts,
+  mockWarehouses,
+  mockFastMoving,
+  mockWarehouseLocations,
+} from './data/mockData';
+>>>>>>> fe72aaca2e84d97e26d248547a79281c92bdf72d
 
 // Type Definitions
 interface KPIData {
@@ -52,9 +79,16 @@ interface NavItem {
 }
 
 export default function Dashboard() {
+<<<<<<< HEAD
   const { data, isLoading, error } = useDashboard();
+=======
+  const router = useRouter();
+>>>>>>> fe72aaca2e84d97e26d248547a79281c92bdf72d
   const [activeNav, setActiveNav] = useState<string>('dashboard');
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
+<<<<<<< HEAD
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -94,10 +128,35 @@ export default function Dashboard() {
     { id: 'history', icon: Clock, label: 'Move History' },
     { id: 'support', icon: HelpCircle, label: 'Support' },
   ];
+=======
+  // Check authentication on mount
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push('/login');
+    } else {
+      const userData = getUser();
+      setUser(userData);
+      setLoading(false);
+    }
+  }, [router]);
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h1 className="text-xl font-semibold text-gray-700">Loading dashboard...</h1>
+        </div>
+      </div>
+    );
+  }
+>>>>>>> fe72aaca2e84d97e26d248547a79281c92bdf72d
 
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
+<<<<<<< HEAD
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
@@ -127,14 +186,17 @@ export default function Dashboard() {
           })}
         </nav>
       </aside>
+=======
+      <Sidebar active="dashboard" />
+>>>>>>> fe72aaca2e84d97e26d248547a79281c92bdf72d
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navigation */}
-        <header className="bg-white border-b border-gray-200 px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 max-w-2xl">
-              <div className="relative">
+        <header className="bg-white border-b border-gray-200 h-16">
+          <div className="flex items-center justify-between px-6 h-full">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
@@ -155,18 +217,32 @@ export default function Dashboard() {
               <button className="p-2 hover:bg-gray-100 rounded-lg">
                 <Settings className="w-5 h-5 text-gray-600" />
               </button>
-              <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg">
+              <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
                 </div>
+                {user && (
+                  <div className="hidden md:block text-sm">
+                    <div className="font-medium text-gray-900">{user.name}</div>
+                    <div className="text-xs text-gray-500">{user.email}</div>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
               </button>
             </div>
           </div>
         </header>
 
-        {/* Dashboard Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        {/* Dashboard Content Scrollable Area */}
+        <div className="flex-1 overflow-y-auto p-6">
           {/* Header Section */}
+
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900">Warehouse & Inventory Dashboard</h1>
             <div className="flex items-center gap-2 mt-1">
@@ -177,6 +253,7 @@ export default function Dashboard() {
 
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+<<<<<<< HEAD
             {kpiData.map((kpi: KPIData, index: number) => (
               <div key={index} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="text-sm text-gray-600 mb-2">{kpi.label}</div>
@@ -191,11 +268,17 @@ export default function Dashboard() {
                 </div>
                 <div className="text-xs text-gray-500 mt-2">{kpi.period}</div>
               </div>
+=======
+
+            {mockKPIData.map((kpi, index) => (
+              <KPICard key={index} kpi={kpi} />
+>>>>>>> fe72aaca2e84d97e26d248547a79281c92bdf72d
             ))}
           </div>
 
           {/* Operations Snapshot */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+<<<<<<< HEAD
             {/* Receipt Operations */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-4">
@@ -257,10 +340,30 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+=======
+            <OperationsCard
+              type="receipt"
+              title="Receipts"
+              count={18}
+              late={5}
+              pending={18}
+              total={234}
+            />
+            <OperationsCard
+              type="delivery"
+              title="Deliveries"
+              count={34}
+              late={8}
+              pending={12}
+              waiting={12}
+              total={189}
+            />
+>>>>>>> fe72aaca2e84d97e26d248547a79281c92bdf72d
           </div>
 
           {/* Widgets Section */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+<<<<<<< HEAD
             {/* Warehouse Capacity */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-4">
@@ -363,32 +466,25 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+=======
+
+            <WarehouseMap locations={mockWarehouseLocations} />
+            <RecentActivity activities={mockRecentActivity} />
           </div>
 
-          {/* Quick Actions */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <button className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-green-200 bg-green-50 hover:bg-green-100 transition-colors">
-                <Package className="w-6 h-6 text-green-600 mb-2" />
-                <span className="text-sm font-medium text-green-700">Create Receipt</span>
-              </button>
-              <button className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors">
-                <Truck className="w-6 h-6 text-blue-600 mb-2" />
-                <span className="text-sm font-medium text-blue-700">Delivery Order</span>
-              </button>
-              <button className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 transition-colors">
-                <RefreshCw className="w-6 h-6 text-purple-600 mb-2" />
-                <span className="text-sm font-medium text-purple-700">Internal Transfer</span>
-              </button>
-              <button className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-orange-200 bg-orange-50 hover:bg-orange-100 transition-colors">
-                <FileText className="w-6 h-6 text-orange-600 mb-2" />
-                <span className="text-sm font-medium text-orange-700">Stock Adjustment</span>
-              </button>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <WarehouseCapacity warehouses={mockWarehouses} />
+            <FastMovingSKUs items={mockFastMoving} />
+            <StockHealth />
+>>>>>>> fe72aaca2e84d97e26d248547a79281c92bdf72d
           </div>
-        </main>
-      </div>
+
+          <AlertsList alerts={mockAlerts} />
+
+          <QuickActions />
+        </div>
+      </main>
     </div>
   );
 }
+
