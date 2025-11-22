@@ -1,43 +1,54 @@
 "use client";
-
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-async function signup(name: string, email: string, password: string) {
-  const res = await fetch("http://localhost:5000/auth/register", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password }),
+interface SignupResponse {
+  error?: string;
+  // Add any other properties you expect in the response if needed
+}
+
+async function signup(loginId: string, email: string, password: string, role: string): Promise<SignupResponse> {
+  // Mock response for UI preview
+  console.log("Mock signup with role:", role); // Log role for UI preview
+  return new Promise<SignupResponse>((resolve) => {
+    setTimeout(() => {
+      resolve({ error: "Backend not connected. This is a UI preview." });
+    }, 500);
   });
-  return res.json();
 }
 
 export default function SignupPage() {
-  const [name, setName] = useState("");
+  const router = useRouter();
+  const [loginId, setLoginId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [reEnterPassword, setReEnterPassword] = useState("");
+  const [role, setRole] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
-    name?: string;
+    loginId?: string;
     email?: string;
     password?: string;
     reEnterPassword?: string;
+    role?: string;
     general?: string;
   }>({});
 
-  const validateName = (name: string): string | undefined => {
-    if (name.trim().length < 2) {
-      return "Name must be at least 2 characters";
+  const validateLoginId = (id: string): string | undefined => {
+    if (id.length === 0) {
+      return undefined; // Don't show error for empty field while typing
     }
-    if (name.trim().length > 50) {
-      return "Name must not exceed 50 characters";
+    if (id.length < 6 || id.length > 12) {
+      return "Login ID must be between 6 and 12 characters";
     }
     return undefined;
   };
 
   const validatePassword = (pwd: string): string | undefined => {
+    if (pwd.length === 0) {
+      return undefined; // Don't show error for empty field while typing
+    }
     if (pwd.length > 8) {
       return "Password must not be more than 8 characters";
     }
@@ -50,44 +61,68 @@ export default function SignupPage() {
     return undefined;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
-
-    // Validate all fields
-    const nameError = validateName(name);
-    const passwordError = validatePassword(password);
-    const reEnterPasswordError =
-      password !== reEnterPassword ? "Passwords do not match" : undefined;
-
-    if (nameError || passwordError || reEnterPasswordError) {
-      setErrors({
-        name: nameError,
-        password: passwordError,
-        reEnterPassword: reEnterPasswordError,
-      });
-      return;
+  const validateEmail = (email: string): string | undefined => {
+    if (email.length === 0) {
+      return undefined; // Don't show error for empty field while typing
     }
-
-    setLoading(true);
-    try {
-      const result = await signup(name, email, password);
-      if (result?.error) {
-        if (result.error.includes("email") || result.error.includes("duplicate")) {
-          setErrors({ email: "Email already exists" });
-        } else {
-          setErrors({ general: result.error });
-        }
-      } else {
-        // On success, navigate to login
-        window.location.href = "/login";
-      }
-    } catch (error) {
-      setErrors({ general: "Signup failed. Please try again." });
-    } finally {
-      setLoading(false);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
     }
+    return undefined;
   };
+
+  const validateReEnterPassword = (pwd: string, originalPwd: string): string | undefined => {
+    if (pwd.length === 0) {
+      return undefined; // Don't show error for empty field while typing
+    }
+    if (pwd !== originalPwd) {
+      return "Passwords do not match";
+    }
+    return undefined;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setErrors({});
+
+  // Validate all fields
+  const loginIdError = validateLoginId(loginId);
+  const emailError = validateEmail(email);
+  const passwordError = validatePassword(password);
+  const reEnterPasswordError = validateReEnterPassword(reEnterPassword, password);
+  const roleError = !role ? "Please select a role" : undefined;
+
+  if (loginIdError || emailError || passwordError || reEnterPasswordError || roleError) {
+    setErrors({
+      loginId: loginIdError,
+      email: emailError,
+      password: passwordError,
+      reEnterPassword: reEnterPasswordError,
+      role: roleError,
+    });
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const result: SignupResponse = await signup(loginId, email, password, role);
+    if (result?.error) {
+      if (result.error.includes("email") || result.error.includes("duplicate")) {
+        setErrors({ email: "Email already exists" });
+      } else {
+        setErrors({ general: result.error });
+      }
+    } else {
+      // On success, navigate to login
+      router.push("/login");
+    }
+  } catch (error) {
+    setErrors({ general: "Signup failed. Please try again." });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
@@ -106,6 +141,34 @@ export default function SignupPage() {
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Login ID Input */}
+            <div>
+              <label
+                htmlFor="loginId"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Enter Login ID
+              </label>
+              <input
+                id="loginId"
+                type="text"
+                value={loginId}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setLoginId(value);
+                  const error = validateLoginId(value);
+                  setErrors((prev) => ({ ...prev, loginId: error }));
+                }}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
+                  errors.loginId ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
+                }`}
+                placeholder="6-12 characters"
+                required
+              />
+              {errors.loginId && (
+                <p className="mt-1 text-sm text-red-600">{errors.loginId}</p>
+              )}
+            </div>
 
             {/* Email Input */}
             <div>
@@ -120,13 +183,14 @@ export default function SignupPage() {
                 type="email"
                 value={email}
                 onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) {
-                    setErrors((prev) => ({ ...prev, email: undefined }));
-                  }
+                  const value = e.target.value;
+                  setEmail(value);
+                  const error = validateEmail(value);
+                  setErrors((prev) => ({ ...prev, email: error }));
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.email ? "border-red-300" : "border-gray-300"
-                  }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
+                  errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
+                }`}
                 placeholder="Enter your email"
                 required
               />
@@ -135,31 +199,34 @@ export default function SignupPage() {
               )}
             </div>
 
-            {/* Name Input */}
+            {/* Role Dropdown */}
             <div>
               <label
-                htmlFor="name"
+                htmlFor="role"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Enter Name
+                Select Role
               </label>
-              <input
-                id="name"
-                type="text"
-                value={name}
+              <select
+                id="role"
+                value={role}
                 onChange={(e) => {
-                  setName(e.target.value);
-                  if (errors.name) {
-                    setErrors((prev) => ({ ...prev, name: undefined }));
-                  }
+                  const value = e.target.value;
+                  setRole(value);
+                  const error = !value ? "Please select a role" : undefined;
+                  setErrors((prev) => ({ ...prev, role: error }));
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.name ? "border-red-300" : "border-gray-300"
-                  }`}
-                placeholder="Enter your full name"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
+                  errors.role ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
+                }`}
                 required
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+              >
+                <option value="">Select a role</option>
+                <option value="inventory manager">Inventory Manager</option>
+                <option value="warehouse staff">Warehouse Staff</option>
+              </select>
+              {errors.role && (
+                <p className="mt-1 text-sm text-red-600">{errors.role}</p>
               )}
             </div>
 
@@ -176,13 +243,19 @@ export default function SignupPage() {
                 type="password"
                 value={password}
                 onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) {
-                    setErrors((prev) => ({ ...prev, password: undefined }));
+                  const value = e.target.value;
+                  setPassword(value);
+                  const error = validatePassword(value);
+                  setErrors((prev) => ({ ...prev, password: error }));
+                  // Also re-validate re-enter password if it has a value
+                  if (reEnterPassword) {
+                    const reEnterError = validateReEnterPassword(reEnterPassword, value);
+                    setErrors((prev) => ({ ...prev, reEnterPassword: reEnterError }));
                   }
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.password ? "border-red-300" : "border-gray-300"
-                  }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
+                  errors.password ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
+                }`}
                 placeholder="Max 8 chars, uppercase & lowercase"
                 required
               />
@@ -204,13 +277,14 @@ export default function SignupPage() {
                 type="password"
                 value={reEnterPassword}
                 onChange={(e) => {
-                  setReEnterPassword(e.target.value);
-                  if (errors.reEnterPassword) {
-                    setErrors((prev) => ({ ...prev, reEnterPassword: undefined }));
-                  }
+                  const value = e.target.value;
+                  setReEnterPassword(value);
+                  const error = validateReEnterPassword(value, password);
+                  setErrors((prev) => ({ ...prev, reEnterPassword: error }));
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${errors.reEnterPassword ? "border-red-300" : "border-gray-300"
-                  }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all text-gray-900 ${
+                  errors.reEnterPassword ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"
+                }`}
                 placeholder="Re-enter your password"
                 required
               />
@@ -252,4 +326,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

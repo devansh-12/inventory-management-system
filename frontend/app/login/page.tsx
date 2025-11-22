@@ -2,45 +2,92 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-async function login(email: string, password: string) {
-  const res = await fetch("http://localhost:5000/auth/login", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+async function login(loginId: string, password: string): Promise<LoginResponse> {
+  // Mock response for UI preview
+  return new Promise<LoginResponse>((resolve) => {
+    setTimeout(() => {
+      resolve({ error: "Backend not connected. This is a UI preview." });
+    }, 500);
   });
-  return res.json();
+}
+
+interface LoginResponse {
+  error?: string;
+  // Add other properties you expect in the response, e.g., user info
 }
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const router = useRouter();
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    loginId?: string;
+    password?: string;
+  }>({});
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await login(email, password);
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        // On success, store user data including name and navigate to home
-        if (result.user) {
-          localStorage.setItem("user", JSON.stringify(result.user));
-        }
-        window.location.href = "/";
-      }
-    } catch {
-      setError("Invalid email or password");
-    } finally {
-      setLoading(false);
+  const validateLoginId = (id: string): string | undefined => {
+    if (id.length > 0 && id.length < 3) {
+      return "Login ID must be at least 3 characters";
     }
+    return undefined;
   };
+
+  const validatePassword = (pwd: string): string | undefined => {
+    if (pwd.length > 0 && pwd.length < 3) {
+      return "Password must be at least 3 characters";
+    }
+    return undefined;
+  };
+
+  const handleLoginIdChange = (value: string) => {
+    setLoginId(value);
+    const error = validateLoginId(value);
+    setFieldErrors((prev) => ({ ...prev, loginId: error }));
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    const error = validatePassword(value);
+    setFieldErrors((prev) => ({ ...prev, password: error }));
+  };
+
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
+  
+  // Final validation
+  const loginIdError = validateLoginId(loginId);
+  const passwordError = validatePassword(password);
+  
+  if (loginIdError || passwordError) {
+    setFieldErrors({
+      loginId: loginIdError,
+      password: passwordError,
+    });
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const result: LoginResponse = await login(loginId, password);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      // On success, navigate to home
+      router.push("/");
+    }
+  } catch {
+    setError("Invalid login ID or password");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
@@ -59,44 +106,29 @@ export default function LoginPage() {
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
+            {/* Login ID Input */}
             <div>
               <label
-                htmlFor="email"
+                htmlFor="loginId"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Email
+                Login ID
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-
-            {/* Name Input */}
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Name
-              </label>
-              <input
-                id="name"
+                id="loginId"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                placeholder="Enter your name"
+                value={loginId}
+                onChange={(e) => handleLoginIdChange(e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900 ${
+                  fieldErrors.loginId ? "border-red-500 focus:ring-red-500" : "border-gray-300"
+                }`}
+                placeholder="Enter your login ID"
                 required
               />
+              {fieldErrors.loginId && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.loginId}</p>
+              )}
             </div>
-
 
             {/* Password Input */}
             <div>
@@ -110,11 +142,16 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900 ${
+                  fieldErrors.password ? "border-red-500 focus:ring-red-500" : "border-gray-300"
+                }`}
                 placeholder="Enter your password"
                 required
               />
+              {fieldErrors.password && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+              )}
             </div>
 
             {/* Error Message */}

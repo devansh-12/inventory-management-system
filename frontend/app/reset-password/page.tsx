@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900"
                                 placeholder="you@example.com"
                                 disabled={loading}
                             />
@@ -113,7 +113,7 @@ export default function ResetPasswordPage() {
                                 required
                                 maxLength={6}
                                 pattern="[0-9]{6}"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-center text-2xl tracking-widest font-mono"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-center text-2xl tracking-widest font-mono text-gray-900"
                                 placeholder="000000"
                                 disabled={loading}
                             />
@@ -131,7 +131,7 @@ export default function ResetPasswordPage() {
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 required
                                 minLength={6}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900"
                                 placeholder="Enter new password"
                                 disabled={loading}
                             />
@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
                                 minLength={6}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900"
                                 placeholder="Confirm new password"
                                 disabled={loading}
                             />
