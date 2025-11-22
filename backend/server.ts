@@ -9,7 +9,6 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// Allow cookies from frontend
 app.use(
   cors({
     origin: "http://localhost:3000",
